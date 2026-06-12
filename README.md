@@ -1,6 +1,7 @@
 # Experimental attention-guided annotation pipeline for MTA waste segmentation
 
 Note1: This is higly experimental to test and experiment the annotation pipeline
+
 Note2: The constraint are made under GTX 1650 4GB VRAM, therefore it is advisable to switch to either larger model of SAM 2.1, or switch to SAM 3
 
 ## Summary
