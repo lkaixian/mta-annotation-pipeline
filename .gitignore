@@ -1,0 +1,10 @@
+.env
+__pycache__/
+annotations/
+corrections/
+active_learning.db
+implementation_plan.md
+walkthrough.md
+sam2.1_l.pt
+sam2.1_t.pt
+mta_*.pt
