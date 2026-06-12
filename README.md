@@ -55,6 +55,7 @@ flowchart TD
 |------|------|---------|
 | [config.py] | 5.3 KB | Central configuration (models, API keys, Pipeline Thresholds, Active Learning Rewards) |
 | [sam2_segmentor.py] | 8.3 KB | SAM2 wrapper, mask→polygon via `cv2.findContours`, dynamic epsilon parsing |
+| [custom_coco_export.py] | 3.5 KB | Experimental exporter parsing class names into COCO `attributes` (material, object, contamination) |
 | [mta_classifier.py] | 10.5 KB | MTA YOLO classifier, IoU-based polygon matching |
 | [active_learning.py] | 20.8 KB | SQLite reward DB, feedback, sampling, export |
 | [roboflow_uploader.py] | 7.4 KB | Roboflow API upload (single + batch) |
@@ -83,6 +84,11 @@ When reviewing a segment, clicking **✏️ Edit** triggers a smart interactive 
 
 ### Real-Time Smoothing Slider
 A zero-latency **Smoothing** slider resides in the UI toolbar. It adjusts `POLYGON_SIMPLIFY_EPSILON` between `0.1` (hyper-precise) and `10.0` (coarse/blocky). Sliding it dynamically recalculates every polygon currently displayed on the image instantly without requiring a full model re-inference.
+
+### Custom COCO Format Export (Experimental)
+A highly experimental feature that exports standard COCO-format JSON files containing segmentation polygons, but extends them with custom `attributes` attached to each annotation. These attributes (`contamination`, `material`, and `object`) are automatically heuristically parsed from the predicted class names (e.g., `m-glass` assigns `material = "glass"`). 
+
+**Manual Attribute Selection UI**: When launching the UI or batch script with the `--experimental-coco-ui` flag, the system will load sub-classes from `material_class.txt` and `object_class.txt`. During interactive review, you will see dropdowns and switches for any `m-*` polygon to manually select its exact material, object, and contamination status, which will override the heuristics during export.
 
 ---
 
