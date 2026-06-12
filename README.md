@@ -1,6 +1,7 @@
 # Experimental attention-guided annotation pipeline for MTA waste segmentation
 
-Note: This is higly experimental to test and experiment the annotation pipeline
+Note1: This is higly experimental to test and experiment the annotation pipeline
+Note2: The constraint are made under GTX 1650 4GB VRAM, therefore it is advisable to switch to either larger model of SAM 2.1, or switch to SAM 3
 
 ## Summary
 
@@ -210,3 +211,19 @@ SAM2 model checkpoint will be downloaded automatically on first use (~2.4 GB for
 | Config generation | ✅ Pass |
 | Module imports | ✅ Pass |
 | SQLite DB initialization | ✅ Pass |
+
+## Third-Party Licenses
+
+This project utilizes several third-party libraries and models which remain subject to their respective licenses:
+
+- Ultralytics YOLO — AGPL-3.0
+- Meta SAM2 — Apache License 2.0
+- PyTorch — BSD-Style License
+- OpenCV — Apache License 2.0
+- NumPy — BSD 3-Clause
+- Pillow — HPND
+- PyYAML — MIT
+- CustomTkinter — MIT
+- Roboflow SDK — MIT
+
+Users are responsible for complying with the licenses of all included dependencies.
