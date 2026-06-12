@@ -1,6 +1,6 @@
 # Experimental attention-guided annotation pipeline for MTA waste segmentation
 
-Note: This is
+Note: This is higly experimental to test and experiment the annotation pipeline
 
 ## Summary
 
@@ -29,8 +29,8 @@ flowchart TD
     D --> F{"Pipeline Mode"}
     E --> F
     
-    F -->|Ensemble (Intersect)| G["Consensus Segmentation\n(Bitwise AND Mask Fusion)"]
-    F -->|Attention First| H["Standard Segments"]
+    F -->|"Ensemble (Intersect)"| G["Consensus Segmentation\n(Bitwise AND Mask Fusion)"]
+    F -->|"Attention First"| H["Standard Segments"]
     
     G --> I["Review UI"]
     H --> I
