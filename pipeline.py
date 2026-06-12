@@ -106,6 +106,14 @@ class MTAPipeline:
             self._exporter = XAnyLabelingExporter()
         return self._exporter
 
+    @property
+    def coco_exporter(self):
+        """Lazy-load Custom COCO exporter."""
+        if not hasattr(self, "_coco_exporter") or self._coco_exporter is None:
+            from custom_coco_export import CustomCocoExporter
+            self._coco_exporter = CustomCocoExporter()
+        return self._coco_exporter
+
     def process_image(
         self,
         image_path: str,
@@ -588,6 +596,8 @@ class MTAPipeline:
         segments: List[Dict],
         to_roboflow: bool = True,
         to_xanylabeling: bool = True,
+        to_custom_coco: bool = False,
+        yolo_target: str = "material"
     ) -> Dict:
         """
         Export approved annotations to Roboflow and/or X-AnyLabeling.
@@ -609,6 +619,7 @@ class MTAPipeline:
                 "class_name": seg.get("predicted_class", "unknown"),
                 "class_id": seg.get("predicted_class_id", -1),
                 "confidence": seg.get("confidence", 0.0),
+                "custom_attributes": seg.get("custom_attributes")
             })
 
         results = {}
@@ -628,6 +639,23 @@ class MTAPipeline:
                 image_width=w,
             )
             results["xanylabeling_path"] = json_path
+
+        # Export to Custom COCO
+        if to_custom_coco:
+            img = cv2.imread(image_path) if isinstance(image_path, str) else None
+            h = segments[0].get("image_height", 640) if segments else 640
+            w = segments[0].get("image_width", 640) if segments else 640
+            if img is not None:
+                h, w = img.shape[:2]
+
+            coco_path = self.coco_exporter.export_annotation(
+                image_path=image_path,
+                polygons_with_classes=polygons_with_classes,
+                image_height=h,
+                image_width=w,
+                yolo_target=yolo_target
+            )
+            results["custom_coco_path"] = coco_path
 
         # Upload to Roboflow
         if to_roboflow:

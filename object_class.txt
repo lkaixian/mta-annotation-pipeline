@@ -1,0 +1,7 @@
+bottle
+can
+wrapper
+bag
+box
+cup
+unknown

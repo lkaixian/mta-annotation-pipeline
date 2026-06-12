@@ -37,7 +37,8 @@ from config import (
     AUTO_APPROVE_THRESHOLD, CONFIDENCE_THRESHOLD,
     SAM2_MODEL, SAM2_AVAILABLE_MODELS,
     REWARD_POLYGON_CORRECT, REWARD_POLYGON_INCORRECT,
-    REWARD_CLASS_CORRECT, REWARD_CLASS_INCORRECT, REWARD_AUTO_APPROVE
+    REWARD_CLASS_CORRECT, REWARD_CLASS_INCORRECT, REWARD_AUTO_APPROVE,
+    MATERIAL_CLASSES, OBJECT_CLASSES, CONTAMINATION_CLASSES
 )
 
 
@@ -53,8 +54,9 @@ class ReviewApp(ctk.CTk):
     VID_W, VID_H = 820, 600
     SIDE_W = 400
 
-    def __init__(self):
+    def __init__(self, experimental_coco_ui=False):
         super().__init__()
+        self.experimental_coco_ui = experimental_coco_ui
         self.title("MTA Active Learning Pipeline — Review UI")
         self.geometry("1320x800")
         self.minsize(1200, 700)
@@ -173,59 +175,105 @@ class ReviewApp(ctk.CTk):
         self.hint_label.pack(pady=40)
 
         # ─── Control bar (bottom) ───
-        ctrl = ctk.CTkFrame(self, height=56, corner_radius=0, fg_color="#161b22")
+        ctrl = ctk.CTkFrame(self, height=96, corner_radius=0, fg_color="#161b22")
         ctrl.pack(fill="x")
         ctrl.pack_propagate(False)
 
+        # Top row: Data & Navigation
+        row1 = ctk.CTkFrame(ctrl, fg_color="transparent")
+        row1.pack(fill="x", padx=4, pady=(8, 4))
+        
+        # Bottom row: Pipeline Settings & Exports
+        row2 = ctk.CTkFrame(ctrl, fg_color="transparent")
+        row2.pack(fill="x", padx=4, pady=(0, 8))
+
+        # ================= ROW 1 =================
         # Load buttons
         ctk.CTkButton(
-            ctrl, text="📂 Load Image", width=120,
+            row1, text="📂 Load Image", width=120,
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="#238636", hover_color="#2ea043",
             command=self._load_image
-        ).pack(side="left", padx=(12, 4), pady=10)
+        ).pack(side="left", padx=(8, 4))
 
         ctk.CTkButton(
-            ctrl, text="📁 Load Folder", width=120,
+            row1, text="📁 Load Folder", width=120,
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="#1f6feb", hover_color="#388bfd",
             command=self._load_folder
-        ).pack(side="left", padx=4, pady=10)
+        ).pack(side="left", padx=4)
 
         # Navigation
         self.btn_prev = ctk.CTkButton(
-            ctrl, text="◀ Prev", width=80,
+            row1, text="◀ Prev", width=80,
             font=ctk.CTkFont(size=12), fg_color="#21262d",
             hover_color="#30363d", command=self._prev_image,
             state="disabled"
         )
-        self.btn_prev.pack(side="left", padx=4, pady=10)
+        self.btn_prev.pack(side="left", padx=4)
 
         self.btn_next = ctk.CTkButton(
-            ctrl, text="Next ▶", width=80,
+            row1, text="Next ▶", width=80,
             font=ctk.CTkFont(size=12), fg_color="#21262d",
             hover_color="#30363d", command=self._next_image,
             state="disabled"
         )
-        self.btn_next.pack(side="left", padx=4, pady=10)
+        self.btn_next.pack(side="left", padx=4)
 
         self.queue_label = ctk.CTkLabel(
-            ctrl, text="", font=ctk.CTkFont(size=11), text_color="#8b949e"
+            row1, text="", font=ctk.CTkFont(size=11), text_color="#8b949e"
         )
         self.queue_label.pack(side="left", padx=8)
 
+        # Export buttons (right side of row 1)
+        ctk.CTkButton(
+            row1, text="📊 Dashboard", width=100,
+            font=ctk.CTkFont(size=12), fg_color="#8957e5",
+            hover_color="#a371f7", command=self._show_dashboard
+        ).pack(side="right", padx=4)
+
+        ctk.CTkButton(
+            row1, text="📤 Upload Roboflow", width=130,
+            font=ctk.CTkFont(size=12), fg_color="#da3633",
+            hover_color="#f85149", command=self._upload_to_roboflow
+        ).pack(side="right", padx=4)
+
+        ctk.CTkButton(
+            row1, text="💾 Export Labels", width=110,
+            font=ctk.CTkFont(size=12), fg_color="#0d6d6e",
+            hover_color="#1a8d8e", command=self._export_xanylabeling
+        ).pack(side="right", padx=4)
+
+        if self.experimental_coco_ui:
+            ctk.CTkButton(
+                row1, text="🧪 Export COCO", width=110,
+                font=ctk.CTkFont(size=12), fg_color="#e5a00d",
+                hover_color="#e6b445", command=self._export_custom_coco
+            ).pack(side="right", padx=4)
+
+            self.yolo_target_var = ctk.StringVar(value="Material")
+            ctk.CTkOptionMenu(
+                row1, variable=self.yolo_target_var,
+                values=["Material", "Object", "Contamination"],
+                width=110, font=ctk.CTkFont(size=11),
+                fg_color="#e5a00d", button_color="#cc8f0c"
+            ).pack(side="right", padx=4)
+
+            ctk.CTkLabel(row1, text="YOLO Target:", font=ctk.CTkFont(size=11), text_color="#8b949e").pack(side="right", padx=(12, 2))
+
+        # ================= ROW 2 =================
         # Auto-approve button
         ctk.CTkButton(
-            ctrl, text="⚡ Auto-Approve", width=120,
+            row2, text="⚡ Auto-Approve", width=120,
             font=ctk.CTkFont(size=12, weight="bold"),
             fg_color="#9b6a00", hover_color="#bb8009",
             command=self._auto_approve
-        ).pack(side="left", padx=4, pady=10)
+        ).pack(side="left", padx=(8, 4))
 
         # SAM2 toggle + model selector
         self.use_sam2_var = ctk.BooleanVar(value=True)
         ctk.CTkSwitch(
-            ctrl, text="SAM2", variable=self.use_sam2_var,
+            row2, text="SAM2", variable=self.use_sam2_var,
             font=ctk.CTkFont(size=11), text_color="#8b949e",
             onvalue=True, offvalue=False,
             command=self._process_current
@@ -233,7 +281,7 @@ class ReviewApp(ctk.CTk):
 
         self.sam2_model_var = ctk.StringVar(value=SAM2_MODEL)
         self.sam2_dropdown = ctk.CTkOptionMenu(
-            ctrl, variable=self.sam2_model_var,
+            row2, variable=self.sam2_model_var,
             values=SAM2_AVAILABLE_MODELS, width=110,
             font=ctk.CTkFont(size=11),
             fg_color="#21262d", button_color="#30363d",
@@ -244,7 +292,7 @@ class ReviewApp(ctk.CTk):
         # Pipeline Mode dropdown
         self.pipeline_mode_var = ctk.StringVar(value="Attention First")
         ctk.CTkOptionMenu(
-            ctrl, variable=self.pipeline_mode_var,
+            row2, variable=self.pipeline_mode_var,
             values=["Attention First", "Classifier Only", "Ensemble (U then N)", "Boolean Mask Fusion / Consensus Segmentation"],
             width=160,
             font=ctk.CTkFont(size=11),
@@ -255,9 +303,9 @@ class ReviewApp(ctk.CTk):
         # Precision Slider
         import config
         self.epsilon_var = ctk.DoubleVar(value=config.POLYGON_SIMPLIFY_EPSILON)
-        ctk.CTkLabel(ctrl, text="Smoothing:", font=ctk.CTkFont(size=11), text_color="#8b949e").pack(side="left", padx=(12, 2))
+        ctk.CTkLabel(row2, text="Smoothing:", font=ctk.CTkFont(size=11), text_color="#8b949e").pack(side="left", padx=(12, 2))
         self.epsilon_slider = ctk.CTkSlider(
-            ctrl, from_=0.1, to=10.0, variable=self.epsilon_var,
+            row2, from_=0.1, to=10.0, variable=self.epsilon_var,
             width=80, height=12,
             command=self._on_epsilon_change
         )
@@ -266,29 +314,10 @@ class ReviewApp(ctk.CTk):
         # Auto Upload Toggle
         self.auto_upload_var = ctk.BooleanVar(value=True)
         ctk.CTkSwitch(
-            ctrl, text="Auto Upload", variable=self.auto_upload_var,
+            row2, text="Auto Upload", variable=self.auto_upload_var,
             font=ctk.CTkFont(size=11), text_color="#8b949e",
             onvalue=True, offvalue=False
         ).pack(side="left", padx=(12, 4))
-
-        # Export buttons (right side)
-        ctk.CTkButton(
-            ctrl, text="📊 Dashboard", width=100,
-            font=ctk.CTkFont(size=12), fg_color="#8957e5",
-            hover_color="#a371f7", command=self._show_dashboard
-        ).pack(side="right", padx=4, pady=10)
-
-        ctk.CTkButton(
-            ctrl, text="📤 Upload Roboflow", width=130,
-            font=ctk.CTkFont(size=12), fg_color="#da3633",
-            hover_color="#f85149", command=self._upload_to_roboflow
-        ).pack(side="right", padx=4, pady=10)
-
-        ctk.CTkButton(
-            ctrl, text="💾 Export Labels", width=110,
-            font=ctk.CTkFont(size=12), fg_color="#0d6d6e",
-            hover_color="#1a8d8e", command=self._export_xanylabeling
-        ).pack(side="right", padx=4, pady=10)
 
     # ── Pipeline Loading ───────────────────────────────────────────
     def _load_pipeline_async(self):
@@ -741,6 +770,52 @@ class ReviewApp(ctk.CTk):
             command=self._show_class_editor
         ).pack(side="left")
 
+        # ─── Experimental COCO Attributes ───
+        if self.experimental_coco_ui and class_name.startswith("m-"):
+            sep_exp = ctk.CTkFrame(self.review_scroll, height=2, fg_color="#21262d")
+            sep_exp.pack(fill="x", padx=6, pady=4)
+
+            ctk.CTkLabel(
+                self.review_scroll, text="🧪  Custom COCO Attributes",
+                font=ctk.CTkFont(size=14, weight="bold"), text_color="#e5a00d"
+            ).pack(anchor="w", padx=10, pady=(6, 4))
+
+            attr_frame = ctk.CTkFrame(self.review_scroll, fg_color="transparent")
+            attr_frame.pack(fill="x", padx=14, pady=4)
+
+            if "custom_attributes" not in seg:
+                seg["custom_attributes"] = {
+                    "material": class_name[2:],
+                    "object": "unknown",
+                    "contamination": "null"
+                }
+
+            attrs = seg["custom_attributes"]
+
+            # Material Dropdown
+            mat_frame = ctk.CTkFrame(attr_frame, fg_color="transparent")
+            mat_frame.pack(fill="x", pady=2)
+            ctk.CTkLabel(mat_frame, text="Material:", width=80, anchor="w").pack(side="left")
+            mat_var = ctk.StringVar(value=attrs["material"])
+            def _on_mat_change(val, s=seg): s["custom_attributes"]["material"] = val
+            ctk.CTkOptionMenu(mat_frame, variable=mat_var, values=MATERIAL_CLASSES, command=_on_mat_change).pack(side="left", fill="x", expand=True)
+
+            # Object Dropdown
+            obj_frame = ctk.CTkFrame(attr_frame, fg_color="transparent")
+            obj_frame.pack(fill="x", pady=2)
+            ctk.CTkLabel(obj_frame, text="Object:", width=80, anchor="w").pack(side="left")
+            obj_var = ctk.StringVar(value=attrs["object"])
+            def _on_obj_change(val, s=seg): s["custom_attributes"]["object"] = val
+            ctk.CTkOptionMenu(obj_frame, variable=obj_var, values=OBJECT_CLASSES, command=_on_obj_change).pack(side="left", fill="x", expand=True)
+
+            # Contamination Dropdown
+            cont_frame = ctk.CTkFrame(attr_frame, fg_color="transparent")
+            cont_frame.pack(fill="x", pady=2)
+            ctk.CTkLabel(cont_frame, text="Contamination:", width=90, anchor="w").pack(side="left")
+            cont_var = ctk.StringVar(value=str(attrs["contamination"]))
+            def _on_cont_change(val, s=seg): s["custom_attributes"]["contamination"] = val
+            ctk.CTkOptionMenu(cont_frame, variable=cont_var, values=CONTAMINATION_CLASSES, command=_on_cont_change).pack(side="left", fill="x", expand=True)
+
         # ─── Top-5 Alternative Classes ───
         sep3 = ctk.CTkFrame(self.review_scroll, height=2, fg_color="#21262d")
         sep3.pack(fill="x", padx=6, pady=4)
@@ -1050,6 +1125,27 @@ class ReviewApp(ctk.CTk):
         )
         self.status.configure(
             text=f"💾 Exported to X-AnyLabeling: {ANNOTATIONS_DIR}",
+            text_color="#7ee787"
+        )
+
+    def _export_custom_coco(self):
+        if self.current_result is None:
+            return
+
+        result = self.current_result
+        yolo_target = getattr(self, 'yolo_target_var', None)
+        target_val = yolo_target.get() if yolo_target else "Material"
+        
+        self.pipeline.export_approved(
+            image_path=result["image_path"],
+            segments=result["segments"],
+            to_roboflow=False,
+            to_xanylabeling=False,
+            to_custom_coco=True,
+            yolo_target=target_val
+        )
+        self.status.configure(
+            text=f"🧪 Exported Custom COCO & YOLO: {ANNOTATIONS_DIR}",
             text_color="#7ee787"
         )
 

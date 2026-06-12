@@ -70,6 +70,14 @@ Examples:
         help="Upload approved annotations to Roboflow"
     )
     parser.add_argument(
+        "--export-coco", action="store_true",
+        help="Export highly experimental Custom COCO format"
+    )
+    parser.add_argument(
+        "--experimental-coco-ui", action="store_true",
+        help="Enable manual COCO attribute selection UI"
+    )
+    parser.add_argument(
         "--conf", type=float, default=None,
         help="Override confidence threshold"
     )
@@ -77,7 +85,7 @@ Examples:
     args = parser.parse_args()
 
     if args.mode == "ui":
-        _run_ui()
+        _run_ui(args)
     elif args.mode == "batch":
         _run_batch(args)
     elif args.mode == "export":
@@ -88,7 +96,7 @@ Examples:
         _run_config(args)
 
 
-def _run_ui():
+def _run_ui(args):
     """Launch the interactive review UI."""
     print("=" * 60)
     print("  MTA Active Learning Pipeline — Review UI")
@@ -96,7 +104,7 @@ def _run_ui():
     print()
 
     from review_ui import ReviewApp
-    app = ReviewApp()
+    app = ReviewApp(experimental_coco_ui=args.experimental_coco_ui)
     app.mainloop()
 
 
@@ -142,6 +150,7 @@ def _run_batch(args):
             str(input_path), result["segments"],
             to_roboflow=args.upload_roboflow,
             to_xanylabeling=True,
+            to_custom_coco=args.export_coco,
         )
     else:
         # Directory
@@ -152,6 +161,28 @@ def _run_batch(args):
         total_time = sum(r.get("processing_time", 0.0) for r in results)
         print(f"\n✅ Batch complete: {len(results)} images, "
               f"{total_segments} total segments in {total_time:.2f}s")
+              
+        if args.export_coco:
+            items = []
+            for r in results:
+                if "error" in r or not r.get("segments"):
+                    continue
+                polys = []
+                for seg in r["segments"]:
+                    polys.append({
+                        "polygon": seg.get("polygon"),
+                        "class_name": seg.get("predicted_class"),
+                        "class_id": seg.get("predicted_class_id"),
+                        "custom_attributes": seg.get("custom_attributes")
+                    })
+                items.append({
+                    "image_path": r["image_path"],
+                    "image_height": r.get("image_height", 0),
+                    "image_width": r.get("image_width", 0),
+                    "polygons": polys
+                })
+            if items:
+                pipe.coco_exporter.export_batch(items)
 
     # Print summary
     summary = pipe.active_learning.get_reward_summary()

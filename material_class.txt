@@ -1,0 +1,7 @@
+glass
+metal
+paper
+plastic-film
+plastic-rigid
+composite
+unknown

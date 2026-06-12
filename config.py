@@ -32,7 +32,7 @@ SAM2_AVAILABLE_MODELS = [           # For UI dropdown switcher
     "sam2.1_l.pt",                   # Large — best quality, ~2.4GB
 ]
 MTA_MODEL_PATH = PROJECT_DIR / "float32-small-x1.pt"  # YOLOv11s segmentation model
-MTA_ATTENTION_PATH = SCRIPT_DIR / "mta_attention.pt"  # YOLO attention model
+MTA_ATTENTION_PATH = SCRIPT_DIR / "mta_attention.pt"  # YOLOv11s attention model
 
 # Fallback to other models if primary not found
 if not MTA_MODEL_PATH.exists():
@@ -135,3 +135,21 @@ IOU_THRESHOLD_INTERSECT = 0.1     # Overlap required to intersect in Intersect m
 MIN_INTERSECT_AREA = 50           # Minimum pixel area for a valid mask intersection
 
 MTA_CONFIDENCE_THRESHOLD = 0.05   # Base threshold for candidate generation
+
+# ---------------------------------------------------------------------------
+# Custom COCO Annotations
+# ---------------------------------------------------------------------------
+from pathlib import Path
+MATERIAL_CLASSES_PATH = SCRIPT_DIR / "material_class.txt"
+OBJECT_CLASSES_PATH = SCRIPT_DIR / "object_class.txt"
+CONTAMINATION_CLASSES_PATH = SCRIPT_DIR / "contamination_class.txt"
+
+def load_txt_classes(path: Path) -> list:
+    if not path.exists():
+        return ["unknown"]
+    with open(path, "r", encoding="utf-8") as f:
+        return [line.strip() for line in f if line.strip()]
+
+MATERIAL_CLASSES = load_txt_classes(MATERIAL_CLASSES_PATH)
+OBJECT_CLASSES = load_txt_classes(OBJECT_CLASSES_PATH)
+CONTAMINATION_CLASSES = load_txt_classes(CONTAMINATION_CLASSES_PATH)
